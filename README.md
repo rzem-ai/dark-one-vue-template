@@ -1,10 +1,12 @@
 # dark-one-vue-template
 
+[![CI](https://github.com/rzem-ai/dark-one-vue-template/actions/workflows/ci.yml/badge.svg)](https://github.com/rzem-ai/dark-one-vue-template/actions/workflows/ci.yml)
+
 Scaffold for a Vue 3 prototype in Atom One Dark, with every shadcn-vue primitive
 and every AI Element pre-installed and themed.
 
 ```bash
-npx giget@latest gh:<owner>/dark-one-vue-template/template my-app
+npx giget@latest gh:rzem-ai/dark-one-vue-template/template my-app
 cd my-app && pnpm install && pnpm dev
 ```
 

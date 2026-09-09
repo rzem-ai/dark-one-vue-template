@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  theme:
+    name: Theme tokens
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # The root toolchain is pure node:* stdlib — no install step needed.
+      - run: npm run theme:check
+      - run: npm test
+
+  build:
+    name: Template builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: template/pnpm-lock.yaml
+      - name: Install
+        working-directory: template
+        run: pnpm install --frozen-lockfile
+      # `vue-tsc -b && vite build` — the only gate that catches peer
+      # dependencies drifting out from under 113 vendored components.
+      - name: Build
+        working-directory: template
+        run: pnpm build
