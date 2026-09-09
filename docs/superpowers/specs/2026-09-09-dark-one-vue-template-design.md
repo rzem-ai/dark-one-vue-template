@@ -1,7 +1,7 @@
 # dark-one-vue-template — design
 
 **Date:** 2026-09-09
-**Status:** approved design, not yet implemented
+**Status:** implemented 2026-09-09; `pnpm build` and `pnpm test` green
 
 ## What this is
 
@@ -36,8 +36,9 @@ oklch, loads Source Sans 3 from the Google Fonts CDN, and `App.vue` renders
 
 **`~/Dev/Work/templates/shadcn/themes/one.json`** — the Atom One Dark palette
 from the `shadcn-drawio` project, holding `cssVarsV4.light` and
-`cssVarsV4.dark`, 31 variables each: the full shadcn set plus `chart-1..5` and
-`sidebar-*`.
+`cssVarsV4.dark`: 31 colour variables each — the full shadcn set plus
+`chart-1..5` and `sidebar-*` — and a 32nd, `radius`, which appears only in the
+light map because corner radius is geometry and must not change with the theme.
 
 The palette is already in shadcn's own variable vocabulary, so re-skinning all
 113 components requires **zero component edits** — they consume `--background`
@@ -94,7 +95,7 @@ sentinel comments:
 
 ```css
 /* @generated one-dark:start — edit themes/one.json and run pnpm theme */
-:root  { --background: #fafafa; ... }   /* cssVarsV4.light, 31 vars */
+:root  { --background: #fafafa; ... }   /* cssVarsV4.light, 32 vars */
 .dark  { --background: #282c34; ... }   /* cssVarsV4.dark,  31 vars */
 /* @generated one-dark:end */
 ```
@@ -145,8 +146,9 @@ It must import at least one shadcn-vue primitive (`Button`) and one AI Element
 Node's built-in test runner. Three checks, all cheap:
 
 1. **Generation is faithful** — running `build-theme.mjs` produces a
-   `style.css` whose `:root` and `.dark` blocks contain all 31 variables from
-   each side of `one.json`, with matching values.
+   `style.css` whose `:root` and `.dark` blocks contain every variable from the
+   corresponding side of `one.json`, with matching values — and `radius` on
+   `:root` alone, so `.dark` inherits rather than restates it.
 2. **Generation is idempotent** — running it twice yields a byte-identical
    file. Guards the sentinel splice against duplicating or eating content.
 3. **Palette has not drifted** — `themes/one.json` matches
@@ -156,6 +158,50 @@ Node's built-in test runner. Three checks, all cheap:
 A fourth check belongs to CI rather than the unit suite: `pnpm build` inside a
 freshly copied `template/` must typecheck and bundle. That is the only thing
 that actually proves 113 vendored components and their peer deps are coherent.
+
+## What the build gate found
+
+The inherited app had never been typechecked. `pnpm build` on the first assembled
+copy produced eight errors in four classes, and every one was a real defect
+rather than a strictness artefact. Recorded here because a future refresh of the
+vendored components will surface the same shapes.
+
+**Missing peer dependencies.** `calendar` imports `@internationalized/date` and
+`chart` imports `@unovis/vue`; neither was installed. Added, along with
+`@unovis/ts`. `@unovis` pulls `maplibre-gl` transitively — install weight only,
+since nothing imports its map renderers.
+
+**pnpm 11 fails, rather than warns, on undecided build scripts.** `vue-demi` and
+`maplibre-gl` both need a decision. `my-vue-app` carried an unresolved
+placeholder (`vue-demi: set this to true or false`), which would have broken
+`pnpm install` in every scaffolded project. Both are now explicit in
+`pnpm-workspace.yaml`.
+
+**The AI SDK reshaped `LanguageModelUsage`.** The vendored `context` components
+read `usage.cachedInputTokens` and `usage.reasoningTokens`; `ai@7.0.48` moved
+these to `usage.inputTokenDetails.cacheReadTokens` and
+`usage.outputTokenDetails.reasoningTokens`. Fixed in place — we own the vendored
+files. This is the clearest illustration of why `pnpm build` gates any refresh:
+nothing else would have caught it.
+
+**`noUnusedLocals` misreads Vue template refs.** It flagged `formRef`,
+`fileInputRef` and `carouselRef` as dead. All three are bound by string in the
+template (`ref="carouselRef"`) against a value destructured from a composable,
+which the flag does not count as a usage — deleting them breaks the component at
+runtime. The flag is off, with the reasoning recorded in `tsconfig.app.json`.
+
+**`TS2589` in `Canvas.vue`.** `useForwardPropsEmits` returns
+`ComputedRef<WithOptionalBooleans<T> & EmitAsProps<Fn>>`, and instantiating that
+over vue-flow's `FlowProps` and `FlowEmits` exceeds TypeScript's depth limit. The
+same helper is used uninstrumented in five other components; only vue-flow's
+types are large enough to trip it. Fixed by widening both arguments at the call
+site — annotating the *result* does not work, because the depth is exceeded while
+inferring the generic, before the cast applies.
+
+Two smaller ones fixed on the way past: `baseUrl` is deprecated in TypeScript 6
+(and redundant, since `paths` now resolves relative to the tsconfig), and
+`vite.config.ts` used `__dirname`, which Vite's forthcoming native config loader
+cannot read.
 
 ## Non-goals
 

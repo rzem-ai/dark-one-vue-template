@@ -1,0 +1,13 @@
+{
+  "name": "dark-one-vue-template",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Scaffold for a Vue 3 prototype in Atom One Dark, with every shadcn-vue primitive and AI Element pre-installed",
+  "scripts": {
+    "theme": "node tools/build-theme.mjs",
+    "theme:check": "node tools/build-theme.mjs --check",
+    "test": "node --test \"tests/**/*.test.mjs\""
+  },
+  "license": "MIT"
+}

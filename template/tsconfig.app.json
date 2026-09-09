@@ -1,0 +1,23 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+
+    /* Linting.
+
+       noUnusedLocals / noUnusedParameters are deliberately off. The vendored
+       components bind template refs by string — `ref="carouselRef"` against a
+       `carouselRef` destructured from a composable — which the flag does not
+       count as a usage. It reports them as dead, and deleting them breaks the
+       component at runtime. Re-enabling the flag means fighting it on every
+       `shadcn-vue add`. */
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+}

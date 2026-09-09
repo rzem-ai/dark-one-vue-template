@@ -1,0 +1,10 @@
+# pnpm 11 fails the install rather than warning when a dependency's build script
+# is neither allowed nor denied, so both of these must be decided explicitly or
+# every scaffolded project breaks on first `pnpm install`.
+allowBuilds:
+  # Picks its Vue 2 / Vue 3 entry points. This project is Vue 3 only.
+  vue-demi: true
+  # Pulled in transitively by @unovis/ts, which backs the `chart` component.
+  # Only its map renderers need this, and nothing here imports them — it is
+  # install weight, not bundle weight.
+  maplibre-gl: true
