@@ -17,7 +17,7 @@ The trailing `/template` matters — giget extracts just that subdirectory, so a
 template/     the payload — what a scaffolded project receives
 themes/       one.json: the Atom One Dark palette, light and dark
 tools/        build-theme.mjs: palette -> template/src/style.css
-tests/        generation, idempotence, and drift checks
+tests/        theme generation and drift, font-name exactness
 docs/         design.md: the design record
 ```
 

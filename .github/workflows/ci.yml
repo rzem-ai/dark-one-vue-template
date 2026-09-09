@@ -34,6 +34,11 @@ jobs:
       - name: Install
         working-directory: template
         run: pnpm install --frozen-lockfile
+      # Re-run the suite with template/node_modules present. The font-family
+      # check reads the expected name out of the installed Fontsource package,
+      # so it skips in the theme job and only has teeth here.
+      - name: Test against installed dependencies
+        run: npm test
       # `vue-tsc -b && vite build` — the only gate that catches peer
       # dependencies drifting out from under 113 vendored components.
       - name: Build

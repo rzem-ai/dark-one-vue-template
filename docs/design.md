@@ -57,7 +57,9 @@ dark-one-vue-template/
 │   └── package.json
 ├── themes/one.json              # vendored copy of the palette
 ├── tools/build-theme.mjs        # themes/one.json -> template/src/style.css
-├── tests/theme.test.mjs         # generation, idempotence, drift
+├── tests/
+│   ├── theme.test.mjs           # generation, idempotence, drift
+│   └── fonts.test.mjs           # self-hosting, exact family names
 ├── .github/workflows/ci.yml     # theme gate + template build
 ├── docs/design.md               # this file
 ├── LICENSE
@@ -96,7 +98,7 @@ The Tailwind theme block declares them as:
 
 > **Hazard.** Fontsource declares these families as **`Geist Variable`** and **`Fira Code Variable`**, not `Geist` / `Fira Code`. CSS font matching is exact: the wrong name fails silently to `system-ui` and looks approximately right. This precise bug survived nine build steps undetected in the `stencil` project.
 >
-> Nothing in the test suite catches it. The build cannot either — a font that never matches is not an error, just a different glyph. The only guards are the exact strings above and the comment in `main.ts` that explains them. If you touch either, check the rendering by eye.
+> The build cannot catch this — a font that never matches is not an error, just a different glyph. `tests/fonts.test.mjs` can, and does: it reads the expected family back out of the installed Fontsource package rather than hard-coding it here, so an upstream rename fails a test instead of silently changing how the app looks. That check needs `template/node_modules`, so it skips locally until you have installed and only bites in CI's build job.
 
 ## The shell
 
@@ -106,14 +108,23 @@ It imports at least one shadcn-vue primitive (`Button`) and one AI Element (`Con
 
 ## Tests
 
-Node's built-in test runner, eight checks in `tests/theme.test.mjs`, all cheap enough to run on every keystroke:
+Node's built-in test runner, twelve checks across two files, all cheap enough to run on every keystroke.
+
+`tests/theme.test.mjs` guards the generated stylesheet:
 
 1. **Generation is faithful** — every variable on each side of `one.json` reaches the corresponding `:root` / `.dark` block with its value intact, and `radius` lands on `:root` alone so `.dark` inherits rather than restates it.
 2. **Splicing is safe** — running the build twice is byte-identical, and hand-written CSS on both sides of the sentinels survives. A stylesheet with no sentinels fails loudly rather than silently.
 3. **The shipped file matches the palette** — `style.css` in the repo is what the current `one.json` generates. This is the check `pnpm theme:check` runs in CI.
 4. **The palette has not drifted** — `themes/one.json` matches `../shadcn/themes/one.json` when that path exists, and skips cleanly when it does not, so the repo stands alone on another machine.
 
-A fifth check belongs to CI rather than the unit suite: `pnpm build` inside `template/` must typecheck and bundle. That is the only thing that actually proves 113 vendored components and their peer deps are coherent, and it is why `.github/workflows/ci.yml` runs it as a separate job on every push and PR.
+`tests/fonts.test.mjs` guards the typography, and exists because of the hazard above:
+
+5. **The fonts stay self-hosted** — `main.ts` imports at least one Fontsource package and `style.css` has no remote `@import`, so a strict CSP cannot strip the typography.
+6. **Imports are declared** — every Fontsource package `main.ts` imports is a dependency in `template/package.json`, so a fresh scaffold installs it.
+7. **No stack has fallen back to a generic** — every `--font-*` leads with a quoted custom family rather than `system-ui`, which is what a silent failure looks like once someone "fixes" it.
+8. **The family names match exactly** — the string each `--font-*` asks for is the string the installed package declares. This one skips without `template/node_modules`.
+
+Two checks belong to CI rather than the unit suite. `pnpm build` inside `template/` must typecheck and bundle — the only thing that actually proves 113 vendored components and their peer deps are coherent. And the suite runs a second time in that job, after `pnpm install`, because check 8 has no teeth until the packages it reads from are on disk.
 
 ## What the build gate found
 
