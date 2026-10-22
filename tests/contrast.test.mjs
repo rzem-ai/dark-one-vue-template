@@ -47,6 +47,14 @@ test('the light primary-button label reads at 4.5:1 or better', () => {
   assert.ok(ratio >= AA, `${light['primary-foreground']} on ${light.primary} is ${ratio.toFixed(2)}:1`);
 });
 
+for (const mode of ['light', 'dark']) {
+  test(`the ${mode} sidebar-primary label, the rail's active button, reads at 4.5:1 or better`, () => {
+    const palette = theme.cssVarsV4[mode];
+    const ratio = contrast(palette['sidebar-primary-foreground'], palette['sidebar-primary']);
+    assert.ok(ratio >= AA, `${palette['sidebar-primary-foreground']} on ${palette['sidebar-primary']} is ${ratio.toFixed(2)}:1`);
+  });
+}
+
 for (const surface of ['background', 'card']) {
   test(`light destructive text reads at 4.5:1 or better on ${surface}`, () => {
     const ratio = contrast(light.destructive, light[surface]);
